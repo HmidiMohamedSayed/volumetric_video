@@ -34,8 +34,6 @@ public class DynamicUIManager : MonoBehaviour
     public TextMeshProUGUI PointSizeText;
     public static MeshRenderer shader;
 
-    //color picker params
-    public GameObject ColorPicker;
 
 
 
@@ -77,6 +75,13 @@ public class DynamicUIManager : MonoBehaviour
     public Button FrameButton45;
     public Button FrameButton60;
 
+
+    public Slider IntensitySilder;
+
+
+    public GameObject DLParamsPanel;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -98,6 +103,25 @@ public class DynamicUIManager : MonoBehaviour
         FrameButton60.GetComponent<Image>().color = Color.white;
         FrameRate = 30f;
         timeBetweenFrames = 1f / FrameRate; // Calcul du délai entre les frames
+    }
+
+
+    public void DLParamWindowHandler()
+    {
+        foreach (Transform child in this.gameObject.transform)
+        {
+            if (child.gameObject == DLParamsPanel)
+            {
+                child.gameObject.SetActive(true);
+            }
+            else
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+        Pivot.transform.position = new Vector3(0, 0, 0);
+        Pivot.transform.eulerAngles = new Vector3(0, 0, 0);
+
     }
 
 
@@ -260,7 +284,7 @@ public class DynamicUIManager : MonoBehaviour
     {
         foreach (Transform child in this.gameObject.transform)
         {
-            if (child.gameObject != LoadingPanel && child.gameObject != ColorPicker)
+            if (child.gameObject != LoadingPanel)
             {
                 child.gameObject.SetActive(isActive);
             }
@@ -281,10 +305,18 @@ public class DynamicUIManager : MonoBehaviour
     }
 
 
-    public void HandleColorPickerVisibility()
+
+    public void IntensitySliderValueChanged()
     {
-       ColorPicker.SetActive(!ColorPicker.activeSelf);
+        shader.material.SetFloat("_Ambient", IntensitySilder.value);
     }
+
+
+
+    //public void HandleColorPickerVisibility()
+    //{
+    //   ColorPicker.SetActive(!ColorPicker.activeSelf);
+    //}
 
 
     private void HandleObjectRotation()
@@ -578,13 +610,13 @@ public class DynamicUIManager : MonoBehaviour
         // Parcours de tous les enfants de ParametersUI
         foreach (Transform child in this.gameObject.transform)
         {
-            // Désactive l'enfant si ce n'est pas le LoadingPanel
-            if (child.gameObject != LoadingPanel)
+            // Désactive l'enfant si ce n'est pas le LoadingPanel ni le DLParamsPanel
+            if (child.gameObject != LoadingPanel && child.gameObject != DLParamsPanel)
             {
                 child.gameObject.SetActive(activate);
             }
         }
-        ColorPicker.SetActive(false);
+        //ColorPicker.SetActive(false);
     }
 
 

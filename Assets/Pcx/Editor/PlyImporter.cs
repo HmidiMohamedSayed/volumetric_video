@@ -96,6 +96,8 @@ namespace Pcx
             R16, G16, B16, A16,
             SingleX, SingleY, SingleZ,
             DoubleX, DoubleY, DoubleZ,
+            SingleNX, SingleNY, SingleNZ,
+            DoubleNX, DoubleNY, DoubleNZ,
             Data8, Data16, Data32, Data64
         }
 
@@ -117,6 +119,12 @@ namespace Pcx
                 case DataProperty.DoubleX: return 8;
                 case DataProperty.DoubleY: return 8;
                 case DataProperty.DoubleZ: return 8;
+                case DataProperty.SingleNX: return 4;
+                case DataProperty.SingleNY: return 4;
+                case DataProperty.SingleNZ: return 4;
+                case DataProperty.DoubleNX: return 8;
+                case DataProperty.DoubleNY: return 8;
+                case DataProperty.DoubleNZ: return 8;
                 case DataProperty.Data8: return 1;
                 case DataProperty.Data16: return 2;
                 case DataProperty.Data32: return 4;
@@ -135,20 +143,24 @@ namespace Pcx
         {
             public List<Vector3> vertices;
             public List<Color32> colors;
+            public List<Vector3> normals;
 
             public DataBody(int vertexCount)
             {
                 vertices = new List<Vector3>(vertexCount);
                 colors = new List<Color32>(vertexCount);
+                normals = new List<Vector3>(vertexCount);
             }
 
             public void AddPoint(
                 float x, float y, float z,
-                byte r, byte g, byte b, byte a
+                byte r, byte g, byte b, byte a,
+                float nx, float ny, float nz
             )
             {
                 vertices.Add(new Vector3(x, y, z));
                 colors.Add(new Color32(r, g, b, a));
+                normals.Add(new Vector3(nx, ny, nz));
             }
         }
 
@@ -172,6 +184,7 @@ namespace Pcx
 
                 mesh.SetVertices(body.vertices);
                 mesh.SetColors(body.colors);
+                mesh.SetNormals(body.normals);
 
                 mesh.SetIndices(
                     Enumerable.Range(0, header.vertexCount).ToArray(),
@@ -286,6 +299,9 @@ namespace Pcx
                         case "x"    : prop = DataProperty.SingleX; break;
                         case "y"    : prop = DataProperty.SingleY; break;
                         case "z"    : prop = DataProperty.SingleZ; break;
+                        case "nx"   : prop = DataProperty.SingleNX; break;
+                        case "ny"   : prop = DataProperty.SingleNY; break;
+                        case "nz"   : prop = DataProperty.SingleNZ; break;
                     }
 
                     // Check the property type.
@@ -352,6 +368,7 @@ namespace Pcx
             var data = new DataBody(header.vertexCount);
 
             float x = 0, y = 0, z = 0;
+            float nx = 0, ny = 0, nz = 0;
             Byte r = 255, g = 255, b = 255, a = 255;
 
             for (var i = 0; i < header.vertexCount; i++)
@@ -378,6 +395,14 @@ namespace Pcx
                         case DataProperty.DoubleY: y = (float)reader.ReadDouble(); break;
                         case DataProperty.DoubleZ: z = (float)reader.ReadDouble(); break;
 
+                        case DataProperty.SingleNX: nx = reader.ReadSingle(); break;
+                        case DataProperty.SingleNY: ny = reader.ReadSingle(); break;
+                        case DataProperty.SingleNZ: nz = reader.ReadSingle(); break;
+
+                        case DataProperty.DoubleNX: nx = (float)reader.ReadDouble(); break;
+                        case DataProperty.DoubleNY: ny = (float)reader.ReadDouble(); break;
+                        case DataProperty.DoubleNZ: nz = (float)reader.ReadDouble(); break;
+
                         case DataProperty.Data8: reader.ReadByte(); break;
                         case DataProperty.Data16: reader.BaseStream.Position += 2; break;
                         case DataProperty.Data32: reader.BaseStream.Position += 4; break;
@@ -385,7 +410,7 @@ namespace Pcx
                     }
                 }
 
-                data.AddPoint(x, y, z, r, g, b, a);
+                data.AddPoint(x, y, z, r, g, b, a, nx, ny, nz);
             }
 
             return data;
