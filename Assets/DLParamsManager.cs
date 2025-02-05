@@ -8,6 +8,7 @@ public class DLParamsManager : MonoBehaviour
     public GameObject LoadingUI;
     public GameObject Pivot;
     public GameObject DirectionalLight;
+    public GameObject PLParamsUI;
     private Light DLLight;
     public Slider RotationXSlider;
     public Slider RotationYSlider;
@@ -36,7 +37,7 @@ public class DLParamsManager : MonoBehaviour
     {
         foreach (Transform child in UIToHide.transform)
         {
-            if (child.gameObject != this.gameObject && child.gameObject != LoadingUI)
+            if (child.gameObject != this.gameObject && child.gameObject != LoadingUI && child.gameObject != PLParamsUI)
             {
                 child.gameObject.SetActive(true);
             }

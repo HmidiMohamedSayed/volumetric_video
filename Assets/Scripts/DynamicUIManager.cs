@@ -80,6 +80,7 @@ public class DynamicUIManager : MonoBehaviour
 
 
     public GameObject DLParamsPanel;
+    public GameObject PLParamsPanel;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -111,6 +112,25 @@ public class DynamicUIManager : MonoBehaviour
         foreach (Transform child in this.gameObject.transform)
         {
             if (child.gameObject == DLParamsPanel)
+            {
+                child.gameObject.SetActive(true);
+            }
+            else
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+        Pivot.transform.position = new Vector3(0, 0, 0);
+        Pivot.transform.eulerAngles = new Vector3(0, 0, 0);
+
+    }
+
+
+    public void PLParamWindowHandler()
+    {
+        foreach (Transform child in this.gameObject.transform)
+        {
+            if (child.gameObject == PLParamsPanel)
             {
                 child.gameObject.SetActive(true);
             }
@@ -284,7 +304,7 @@ public class DynamicUIManager : MonoBehaviour
     {
         foreach (Transform child in this.gameObject.transform)
         {
-            if (child.gameObject != LoadingPanel)
+            if (child.gameObject != LoadingPanel && child.gameObject != DLParamsPanel && child.gameObject != PLParamsPanel)
             {
                 child.gameObject.SetActive(isActive);
             }
@@ -610,8 +630,8 @@ public class DynamicUIManager : MonoBehaviour
         // Parcours de tous les enfants de ParametersUI
         foreach (Transform child in this.gameObject.transform)
         {
-            // Désactive l'enfant si ce n'est pas le LoadingPanel ni le DLParamsPanel
-            if (child.gameObject != LoadingPanel && child.gameObject != DLParamsPanel)
+            // Désactive l'enfant si ce n'est pas le LoadingPanel ni le DLParamsPanel ni le PLParamsPanel
+            if (child.gameObject != LoadingPanel && child.gameObject != DLParamsPanel && child.gameObject != PLParamsPanel)
             {
                 child.gameObject.SetActive(activate);
             }
