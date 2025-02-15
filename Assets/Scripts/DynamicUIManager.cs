@@ -415,10 +415,13 @@ public class DynamicUIManager : MonoBehaviour
 
     public void OpenFileExplorer()
     {
-
-        PathToLoad = SFB.StandaloneFileBrowser.OpenFolderPanel("Choose a folder", "",false)[0];
-        Debug.Log(PathToLoad);
-
+        //#if UNITY_WEBGL && !UNITY_EDITOR
+        //WebFileBrowser webFileBrowser = new WebFileBrowser();
+        //webFileBrowser.OpenFolder();
+        //#else
+        PathToLoad = SFB.StandaloneFileBrowser.OpenFolderPanel("Choose a folder", "", false)[0];
+        Debug.Log("Selected Folder: " + PathToLoad);
+//#endif
         if (!string.IsNullOrEmpty(PathToLoad) && Directory.Exists(PathToLoad))
         {
             string[] PlyFiles = Directory.GetFiles(PathToLoad, "*.ply");
@@ -562,6 +565,7 @@ public class DynamicUIManager : MonoBehaviour
     private Mesh LoadPLYAsMesh(string filePath)
     {
         List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>(); // Store normals
         List<Color> colors = new List<Color>();
         List<int> indices = new List<int>();
 
@@ -569,13 +573,14 @@ public class DynamicUIManager : MonoBehaviour
         {
             // Parse the header
             bool headerEnded = false;
+            bool hasNormals = false;
             while (!headerEnded)
             {
                 string line = ReadAsciiLine(reader);
+                if (line.StartsWith("property float nx"))
+                    hasNormals = true;
                 if (line.StartsWith("end_header"))
-                {
                     headerEnded = true;
-                }
             }
 
             // Parse vertex data
@@ -585,12 +590,21 @@ public class DynamicUIManager : MonoBehaviour
                 float y = reader.ReadSingle();
                 float z = reader.ReadSingle();
 
+                float nx = 0, ny = 0, nz = 0;
+                if (hasNormals)
+                {
+                    nx = reader.ReadSingle();
+                    ny = reader.ReadSingle();
+                    nz = reader.ReadSingle();
+                }
+
                 byte r = reader.ReadByte();
                 byte g = reader.ReadByte();
                 byte b = reader.ReadByte();
                 byte a = reader.ReadByte();
 
                 vertices.Add(new Vector3(x, y, z));
+                normals.Add(new Vector3(nx, ny, nz)); // Store normal
                 colors.Add(new Color32(r, g, b, a));
 
                 indices.Add(indices.Count); // Add sequential indices
@@ -601,6 +615,7 @@ public class DynamicUIManager : MonoBehaviour
         Mesh mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // Supports large meshes
         mesh.SetVertices(vertices);
+        mesh.SetNormals(normals); // Apply normals
         mesh.SetColors(colors);
         mesh.SetIndices(indices.ToArray(), MeshTopology.Points, 0); // Use "Points" for visualization
         mesh.RecalculateBounds();
