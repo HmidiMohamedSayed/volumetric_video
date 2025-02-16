@@ -6,6 +6,10 @@ using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using TMPro;
 using SFB;
+using System;
+using System.Text.RegularExpressions;
+using System.Globalization;
+
 public class DynamicUIManager : MonoBehaviour
 {
 
@@ -76,19 +80,26 @@ public class DynamicUIManager : MonoBehaviour
     public Button FrameButton60;
 
 
-    public Slider IntensitySilder;
-
-
     public GameObject DLParamsPanel;
     public GameObject PLParamsPanel;
+
+
+    public GameObject LightBulb;
+
+    public TMP_InputField IntensityInputField;
+    public TMP_InputField PointSizeInputField;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         InitialPosition = Camera.transform.localPosition;
         initialPivotRotation = Pivot.transform.rotation;
         shader = ObjectLoaded.GetComponent<MeshRenderer>();
+        Debug.Log(shader.material.GetFloat("_Ambient"));
+        IntensityInputField.text = shader.material.GetFloat("_Ambient") + "";
+        PointSizeInputField.text = shader.material.GetFloat("_PointSize") + "";
         UpdatePointSize();
         LoadingPanel.SetActive(false);
         folderPath = Path.Combine(@"C:\Users\mhi\Desktop\IDIA 5\PRED", videoOutputPath);
@@ -195,6 +206,10 @@ public class DynamicUIManager : MonoBehaviour
     {
         if (!isRecording)
         {
+            foreach (Renderer renderer in LightBulb.GetComponentsInChildren<Renderer>())
+            {
+                renderer.enabled = false; // or true to show
+            }
             InitialLocalPosition = Pivot.transform.position;
             InitialLocalRotation = Pivot.transform.eulerAngles;
             Pivot.transform.position = new Vector3(0, 0, 0);
@@ -224,6 +239,10 @@ public class DynamicUIManager : MonoBehaviour
         if (isRecording)
         {
             isRecording = false;
+            foreach (Renderer renderer in LightBulb.GetComponentsInChildren<Renderer>())
+            {
+                renderer.enabled = true;
+            }
             Debug.Log("Recording stopped. Frames saved in: " + Path.GetFullPath(folderPath));
             ConvertToVideo();
             DisableEnableUI(true);
@@ -313,8 +332,8 @@ public class DynamicUIManager : MonoBehaviour
 
     private void UpdatePointSize()
     {
-        PointSizeText.text = "Point Size : " + shader.material.GetFloat("_PointSize").ToString("F3");
-        PointSizeSilder.value = shader.material.GetFloat("_PointSize");
+        //PointSizeText.text = "Point Size : " + shader.material.GetFloat("_PointSize").ToString("F3");
+        //PointSizeSilder.value = shader.material.GetFloat("_PointSize");
     }
 
 
@@ -326,9 +345,60 @@ public class DynamicUIManager : MonoBehaviour
 
 
 
-    public void IntensitySliderValueChanged()
+    public void IntensityInputFieldValueChanged()
     {
-        shader.material.SetFloat("_Ambient", IntensitySilder.value);
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (Regex.IsMatch(IntensityInputField.text, @"[\-\+]?[0-9]*(\.[0-9]+)?"))
+        {
+            try
+            {
+                float intensity = float.Parse(IntensityInputField.text, CultureInfo.InvariantCulture);
+                shader.material.SetFloat("_Ambient", intensity);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log(ex.Message);
+            }
+        }
+        else
+        {
+            IntensityInputField.text = "0";
+            shader.material.SetFloat("_Ambient", 0);
+        }
+
+    }
+
+
+
+    public void PointSizeInputFieldValueChanged()
+    {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (Regex.IsMatch(PointSizeInputField.text, @"[\-\+]?[0-9]*(\.[0-9]+)?"))
+        {
+            try
+            {
+                float size = float.Parse(PointSizeInputField.text, CultureInfo.InvariantCulture);
+                if(size > 5)
+                {
+                    size = 5;
+                }
+                else if(size < 0)
+                {
+                    size = 0;
+                }
+                shader.material.SetFloat("_PointSize",size);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log(ex.Message);
+            }
+        }
+        else
+        {
+            PointSizeInputField.text = "2";
+            shader.material.SetFloat("_PointSize", 2);
+        }
+
     }
 
 
