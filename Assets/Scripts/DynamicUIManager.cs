@@ -362,8 +362,8 @@ public class DynamicUIManager : MonoBehaviour
         }
         else
         {
-            IntensityInputField.text = "0";
-            shader.material.SetFloat("_Ambient", 0);
+            IntensityInputField.text = "0.15";
+            shader.material.SetFloat("_Ambient", 0.15f);
         }
 
     }

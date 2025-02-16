@@ -1,3 +1,7 @@
+using System;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,17 +18,18 @@ public class PLParamsManager : MonoBehaviour
     public Slider PositionXSlider;
     public Slider PositionYSlider;
     public Slider PositionZSlider;
-    public Slider PLIntensitySlider;
+    public TMP_InputField PLIntensityInputField;
     public Toggle PLToggle;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         PLLight = PointLight.GetComponent<Light>();
         PositionXSlider.value = BulbObject.transform.position.x;
         PositionYSlider.value = BulbObject.transform.position.y;
         PositionZSlider.value = BulbObject.transform.position.z;
-        PLIntensitySlider.value = PLLight.intensity;
+        PLIntensityInputField.text = PLLight.intensity + "";
         PLToggle.isOn = true;
     }
 
@@ -54,9 +59,34 @@ public class PLParamsManager : MonoBehaviour
         BulbObject.transform.position = new Vector3(PositionXSlider.value, PositionYSlider.value, PositionZSlider.value);
     }
 
-    public void IntensitySliderValueChanged()
+    public void IntensityInputFieldValueChanged()
     {
-        PLLight.intensity = PLIntensitySlider.value;
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (Regex.IsMatch(PLIntensityInputField.text, @"[\-\+]?[0-9]*(\.[0-9]+)?"))
+        {
+            try
+            {
+                float intensity = float.Parse(PLIntensityInputField.text, CultureInfo.InvariantCulture);
+                if (intensity > 5)
+                {
+                    intensity = 5;
+                }
+                else if (intensity < 0)
+                {
+                    intensity = 0;
+                }
+                PLLight.intensity = intensity;
+            }
+            catch (Exception ex)
+            {
+                Debug.Log(ex.Message);
+            }
+        }
+        else
+        {
+            PLIntensityInputField.text = "1";
+            PLLight.intensity = 1;
+        }
     }
 
 
