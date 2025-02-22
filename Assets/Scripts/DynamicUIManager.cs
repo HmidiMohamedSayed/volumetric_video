@@ -9,6 +9,9 @@ using SFB;
 using System;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Linq; // Add this namespace for LINQ functions
+using UnityEngine.Networking;
 
 public class DynamicUIManager : MonoBehaviour
 {
@@ -70,14 +73,15 @@ public class DynamicUIManager : MonoBehaviour
     public GameObject ReduceButton;
     public GameObject Panel;
 
-
+    [DllImport("__Internal")]
+    private static extern void OpenFolderBrowser();
 
     //frame rate parameters
     public float FrameRate = 30f;
-    public Button FrameButton20;
-    public Button FrameButton30;
-    public Button FrameButton45;
-    public Button FrameButton60;
+    public UnityEngine.UI.Button FrameButton20;
+    public UnityEngine.UI.Button FrameButton30;
+    public UnityEngine.UI.Button FrameButton45;
+    public UnityEngine.UI.Button FrameButton60;
 
 
     public GameObject DLParamsPanel;
@@ -88,7 +92,6 @@ public class DynamicUIManager : MonoBehaviour
 
     public TMP_InputField IntensityInputField;
     public TMP_InputField PointSizeInputField;
-
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -418,15 +421,15 @@ public class DynamicUIManager : MonoBehaviour
             if (!EventSystem.current.IsPointerOverGameObject())
             {
                 isDragging = true;
-                Cursor.lockState = CursorLockMode.Locked; // Lock the cursor
-                Cursor.visible = false; // Hide the cursor
+                UnityEngine.Cursor.lockState = CursorLockMode.Locked; // Lock the cursor
+                UnityEngine.Cursor.visible = false; // Hide the cursor
             }
         }
         else if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
-            Cursor.lockState = CursorLockMode.None; // Unlock the cursor
-            Cursor.visible = true; // Show the cursor
+            UnityEngine.Cursor.lockState = CursorLockMode.None; // Unlock the cursor
+            UnityEngine.Cursor.visible = true; // Show the cursor
         }
 
         // Rotate the object while dragging
@@ -483,15 +486,202 @@ public class DynamicUIManager : MonoBehaviour
 
     List<Mesh> MeshList = new List<Mesh>();
 
+
+    public void BrowseFolder()
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                 OpenFolderBrowser();
+#endif
+    }
+
+    public void ReceivePlyFileCount(int fileCount)
+    {
+        Debug.Log($"Number of .ply files: {fileCount}");
+        PLYFilesloaded = 0;
+        PLYFilesCount = fileCount;
+        if(fileCount > 0)
+        {
+            EnDisableAllExceptLoadingPanel(false);
+        }
+    }
+
+    int PLYFilesloaded = 0;
+    int PLYFilesCount = 0;
+
+    public void ReceivePlyFilePath(string fileName)
+    {
+        Debug.Log("Trying to load PLY full path file: " + fileName);
+        string[] files = Directory.GetFiles(Directory.GetCurrentDirectory());
+        foreach(string file in files)
+        {
+            Debug.Log("file : " + file);
+        }
+        fileName = Path.Combine(Application.streamingAssetsPath, fileName);
+        Debug.Log("ply full path : " + fileName);
+    
+        StartCoroutine(LoadPlyFile(fileName));
+    }
+
+    //public void ReceivePlyFileData(string jsonData)
+    //{
+    //    PlyFileData plyFile = JsonUtility.FromJson<PlyFileData>(jsonData);
+    //    byte[] binaryData = plyFile.data.Select(b => (byte)b).ToArray();
+    //    Debug.Log(plyFile.data);
+    //    // Process the file (Load it into the mesh list)
+    //    Mesh mesh = LoadPLYAsMeshWEB(binaryData);
+    //    if (mesh != null)
+    //    {
+    //        Debug.Log($"Mesh is not null");
+    //        MeshList.Add(mesh);
+    //        PLYFilesloaded++;
+    //        float progress = (float)PLYFilesloaded / PLYFilesCount;
+    //        UpdateProgressBar(progress);
+    //    }
+    //    Debug.Log($"In ReceivePlyFileData line 523");
+    //    if (PLYFilesloaded == PLYFilesCount)
+    //    {
+    //        FrameSlider.maxValue = MeshList.Count - 1; // Set max value to total frames
+    //        FrameSlider.value = 0; // Start at the first frame
+    //        if (MeshList.Count > 0)
+    //        {
+    //            UpdateMesh(0); // Display the first frame
+    //            Debug.Log($"In UpdateMesh");
+    //        }
+
+    //        // Masquer la barre de chargement lorsque le chargement est terminé
+    //        isLoading = false;
+    //        LoadingPanel.SetActive(false);
+    //        EnDisableAllExceptLoadingPanel(true);
+    //    }
+    //}
+
+    public IEnumerator LoadPlyFile(string filePath)
+    {
+        // Process the file (Load it into the mesh list)
+
+        // Ensure the URL format is correct
+        if (!filePath.StartsWith("http"))
+        {
+            filePath = "http://" + filePath.TrimStart('/');
+        }
+
+        UnityWebRequest www = UnityWebRequest.Get(filePath);
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.Success)
+        {
+            byte[] fileData = www.downloadHandler.data;
+            Debug.Log("File successfully loaded from WebGL StreamingAssets: " + filePath);
+
+            string directory = Directory.GetCurrentDirectory();
+            // Write byte[] to file
+            string tempFileFullPath = Path.Combine(directory, filePath.Split(@"/").Last());
+            File.WriteAllBytes(tempFileFullPath, fileData);
+            Mesh mesh = LoadPLYAsMesh(tempFileFullPath);
+            if (mesh != null)
+            {
+                Debug.Log($"Mesh is not null");
+                MeshList.Add(mesh);
+                PLYFilesloaded++;
+                float progress = (float)PLYFilesloaded / PLYFilesCount;
+                UpdateProgressBar(progress);
+            }
+            Debug.Log($"In ReceivePlyFileData line 523");
+            if (PLYFilesloaded == PLYFilesCount)
+            {
+                FrameSlider.maxValue = MeshList.Count - 1; // Set max value to total frames
+                FrameSlider.value = 0; // Start at the first frame
+                if (MeshList.Count > 0)
+                {
+                    UpdateMesh(0); // Display the first frame
+                    Debug.Log($"In UpdateMesh");
+                }
+
+                // Masquer la barre de chargement lorsque le chargement est terminé
+                isLoading = false;
+                LoadingPanel.SetActive(false);
+                EnDisableAllExceptLoadingPanel(true);
+            }
+            // Process the data (e.g., parse the PLY file)
+        }
+        else
+        {
+            Debug.LogError("Failed to load file: " + www.error);
+        }
+        yield return null;
+    }
+
+    private Mesh LoadPLYAsMeshWEB(byte[] binaryData)
+    {
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<Color> colors = new List<Color>();
+        List<int> indices = new List<int>();
+        Debug.Log(binaryData.Count());
+
+        using (MemoryStream memoryStream = new MemoryStream(binaryData))
+        using (var reader = new BinaryReader(memoryStream))
+        {
+            // Parse the header
+            bool headerEnded = false;
+            bool hasNormals = false;
+            while (!headerEnded)
+            {
+                string line = ReadAsciiLine(reader);
+                if (line.StartsWith("property float nx"))
+                    hasNormals = true;
+                if (line.StartsWith("end_header"))
+                    headerEnded = true;
+            }
+
+            // Parse vertex data
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                float x = reader.ReadSingle();
+                float y = reader.ReadSingle();
+                float z = reader.ReadSingle();
+
+                float nx = 0, ny = 0, nz = 0;
+                if (hasNormals)
+                {
+                    nx = reader.ReadSingle();
+                    ny = reader.ReadSingle();
+                    nz = reader.ReadSingle();
+                }
+
+                byte r = reader.ReadByte();
+                byte g = reader.ReadByte();
+                byte b = reader.ReadByte();
+                byte a = reader.ReadByte();
+
+                vertices.Add(new Vector3(x, y, z));
+                normals.Add(new Vector3(nx, ny, nz)); // Store normal
+                colors.Add(new Color32(r, g, b, a));
+
+                indices.Add(indices.Count); // Add sequential indices
+            }
+        }
+
+        // Create and return the mesh
+        Mesh mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // Supports large meshes
+        mesh.SetVertices(vertices);
+        mesh.SetNormals(normals); // Apply normals
+        mesh.SetColors(colors);
+        mesh.SetIndices(indices.ToArray(), MeshTopology.Points, 0); // Use "Points" for visualization
+        mesh.RecalculateBounds();
+
+        return mesh;
+    }
+
     public void OpenFileExplorer()
     {
-        //#if UNITY_WEBGL && !UNITY_EDITOR
-        //WebFileBrowser webFileBrowser = new WebFileBrowser();
-        //webFileBrowser.OpenFolder();
-        //#else
+#if UNITY_WEBGL && !UNITY_EDITOR
+        BrowseFolder();
+#else
         PathToLoad = SFB.StandaloneFileBrowser.OpenFolderPanel("Choose a folder", "", false)[0];
         Debug.Log("Selected Folder: " + PathToLoad);
-//#endif
+        //#endif
         if (!string.IsNullOrEmpty(PathToLoad) && Directory.Exists(PathToLoad))
         {
             string[] PlyFiles = Directory.GetFiles(PathToLoad, "*.ply");
@@ -505,6 +695,31 @@ public class DynamicUIManager : MonoBehaviour
         {
             Debug.Log("Directory: " + PathToLoad + " doesn't exist");
         }
+#endif
+
+    }
+
+
+    public IEnumerator LoadFilesWithProgress()
+    {
+        isLoading = true;
+        MeshList.Clear();
+
+        int totalFiles = MeshList.Count;
+        int loadedFiles = 0;
+
+        foreach (var mesh in MeshList)
+        {
+            // Simulate loading
+            loadedFiles++;
+            float progress = (float)loadedFiles / totalFiles;
+            UpdateProgressBar(progress);
+
+            yield return null;
+        }
+
+        LoadingPanel.SetActive(false);
+        isLoading = false;
     }
 
 
@@ -597,6 +812,8 @@ public class DynamicUIManager : MonoBehaviour
         {
             MeshFilter meshFilter = ObjectLoaded.GetComponent<MeshFilter>();
             meshFilter.mesh = MeshList[frameIndex];
+            meshFilter.sharedMesh = MeshList[frameIndex];
+            Debug.Log("in here");
         }
     }
 
@@ -638,6 +855,13 @@ public class DynamicUIManager : MonoBehaviour
         List<Vector3> normals = new List<Vector3>(); // Store normals
         List<Color> colors = new List<Color>();
         List<int> indices = new List<int>();
+        filePath = filePath.Replace(@"/C", @"C");
+        Debug.Log("the full path 2 is : " + filePath);
+
+        if (File.Exists(filePath))
+        {
+            Debug.Log("the file exists and the full path 2 is : " + filePath);
+        }
 
         using (BinaryReader reader = new BinaryReader(File.Open(filePath, FileMode.Open)))
         {
@@ -652,6 +876,9 @@ public class DynamicUIManager : MonoBehaviour
                 if (line.StartsWith("end_header"))
                     headerEnded = true;
             }
+
+            Debug.Log("hasNormals = " + hasNormals);
+            Debug.Log("hasNormals = " + hasNormals);
 
             // Parse vertex data
             while (reader.BaseStream.Position < reader.BaseStream.Length)
@@ -689,9 +916,17 @@ public class DynamicUIManager : MonoBehaviour
         mesh.SetColors(colors);
         mesh.SetIndices(indices.ToArray(), MeshTopology.Points, 0); // Use "Points" for visualization
         mesh.RecalculateBounds();
+        mesh.MarkDynamic();  // Important for WebGL performance
 
         return mesh;
     }
+
+
+
+
+
+
+
 
     private string ReadAsciiLine(BinaryReader reader)
     {
@@ -753,4 +988,17 @@ public class DynamicUIManager : MonoBehaviour
     //{
     //    LightSource.intensity = intensity;
     //}
+}
+[Serializable]
+public class PlyFileData
+{
+    public string name;
+    public int[] data;
+}
+
+[Serializable]
+public class FolderInfo
+{
+    public string path;
+    public int count;
 }
