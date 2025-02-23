@@ -10,6 +10,8 @@ public class ScreenshotManager : MonoBehaviour
     private string screenshotsFolder = "ScreenShots";
     private AudioSource audioSource;
 
+    public GameObject LightBulb;
+
     private void Start()
     {
         // Get the AudioSource component attached to the same GameObject
@@ -46,7 +48,12 @@ public class ScreenshotManager : MonoBehaviour
         if (uiElement != null)
         {
             uiElement.SetActive(false);
+            foreach (Renderer renderer in LightBulb.GetComponentsInChildren<Renderer>())
+            {
+                renderer.enabled = false; // or true to show
+            }
         }
+
 
         // Capture the screenshot
         ScreenCapture.CaptureScreenshot(filePath);
@@ -60,6 +67,10 @@ public class ScreenshotManager : MonoBehaviour
         if (uiElement != null)
         {
             uiElement.SetActive(true);
+            foreach (Renderer renderer in LightBulb.GetComponentsInChildren<Renderer>())
+            {
+                renderer.enabled = true; // or true to show
+            }
         }
 
         // Optionally, show a success icon or perform additional actions

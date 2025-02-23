@@ -16,6 +16,11 @@ public class MainMenuManager : MonoBehaviour
     }
 
 
+    public void GoToMainMenuSceneScene()
+    {
+        SceneManager.LoadScene(0);
+    }
+
 
     public void GoToStaticScene()
     {

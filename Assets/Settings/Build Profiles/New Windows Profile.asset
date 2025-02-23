@@ -23,7 +23,7 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/MainMenu.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/StaticPC.unity
+    m_path: Assets/Scenes/StaticPC2.unity
   - m_enabled: 1
     m_path: Assets/Scenes/DynamicPC.unity
   m_ScriptingDefines: []

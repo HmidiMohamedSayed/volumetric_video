@@ -19,7 +19,13 @@ MonoBehaviour:
   m_PlatformBuildProfile:
     rid: 8404529919187484727
   m_OverrideGlobalSceneList: 1
-  m_Scenes: []
+  m_Scenes:
+  - m_enabled: 1
+    m_path: Assets/Scenes/MainMenu.unity
+  - m_enabled: 1
+    m_path: Assets/Scenes/StaticPC2.unity
+  - m_enabled: 1
+    m_path: Assets/Scenes/DynamicPC.unity
   m_ScriptingDefines:
   - 
   m_PlayerSettingsYaml:
