@@ -277,14 +277,6 @@ public class DynamicUIManager : MonoBehaviour
         }
     }
 
-    public void ToggleRecording()
-    {
-        if (isRecording)
-            StopRecording();
-        else
-            StartRecording();
-    }
-
 
     private void ConvertToVideo()
     {
@@ -403,13 +395,6 @@ public class DynamicUIManager : MonoBehaviour
         }
 
     }
-
-
-
-    //public void HandleColorPickerVisibility()
-    //{
-    //   ColorPicker.SetActive(!ColorPicker.activeSelf);
-    //}
 
 
     private void HandleObjectRotation()
@@ -730,37 +715,39 @@ public class DynamicUIManager : MonoBehaviour
 
         int totalFiles = plyFiles.Length;
         int loadedFiles = 0;
-
+        bool FirstIsLoaded = false;
         foreach (string file in plyFiles)
         {
             if (File.Exists(file))
             {
                 // Charger le fichier PLY
-                LoadObject(file);
-                EnDisableAllExceptLoadingPanel(false);
+                StartCoroutine(LoadObject(file));
+                //EnDisableAllExceptLoadingPanel(false);
                 // Mettre à jour la barre de progression
                 loadedFiles++;
                 float progress = (float)loadedFiles / totalFiles;
                 UpdateProgressBar(progress);
 
+                if (!FirstIsLoaded)
+                {
+                    // Initialize the slider when the first frame is loaded
+                    if (MeshList.Count > 0)
+                    {
+                        UpdateMesh(0); // Display the first frame
+                    }
+                    FrameSlider.value = 0; // Start at the first frame
+                    FirstIsLoaded = true;
+                }
+                FrameSlider.maxValue = MeshList.Count - 1; // Set max value to total frames
+
                 yield return null; // Permettre à l'UI de se rafraîchir entre chaque itération
             }
-        }
-
-        // Initialize the slider when loading is complete
-        FrameSlider.maxValue = MeshList.Count - 1; // Set max value to total frames
-        FrameSlider.value = 0; // Start at the first frame
-
-
-        if (MeshList.Count > 0)
-        {
-            UpdateMesh(0); // Display the first frame
         }
 
         // Masquer la barre de chargement lorsque le chargement est terminé
         isLoading = false;
         LoadingPanel.SetActive(false);
-        EnDisableAllExceptLoadingPanel(true);
+        //EnDisableAllExceptLoadingPanel(true);
     }
 
 
@@ -824,12 +811,12 @@ public class DynamicUIManager : MonoBehaviour
     }
 
 
-    private void LoadObject(string filePath)
+    private IEnumerator LoadObject(string filePath)
     {
         if (!File.Exists(filePath))
         {
             Debug.LogError("File does not exist: " + filePath);
-            return;
+            yield return null;
         }
 
         if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
@@ -842,6 +829,7 @@ public class DynamicUIManager : MonoBehaviour
                 System.GC.Collect();
                 Resources.UnloadUnusedAssets();
             }
+            yield return null;
         }
         else
         {
@@ -983,11 +971,6 @@ public class DynamicUIManager : MonoBehaviour
         }
         PanelReduced = !PanelReduced;
     }
-
-    //public void AdjustLightIntensity()
-    //{
-    //    LightSource.intensity = intensity;
-    //}
 }
 [Serializable]
 public class PlyFileData
